@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Equity calculator</title>
+        <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    </head>
+    {% load static %}
+    <body>
+        <h2>Equity calculator</h2>
+        <div id="EquityCalculator">
+            <form action="" method="post">
+                <label>
+                    <p>Dated on</p>
+                    <input type="date" name="fromdate" @change="get_equity_value()" v-model="date">
+                </label>
+                <label>
+                    <p>Select Equity</p>
+                    <select @change="get_equity_value()" v-model="scheme_name">
+                        <option v-bind:value="null">select one</option>
+                        <option v-for="equity in equities" v-bind:value="equity.scheme_code">
+                            {& equity.scheme_name &}
+                        </option>
+                    </select>
+                </label>
+                <label>
+                    <p>Amount to invest</p>
+                    <input type="text" palceholder="Amount to invest" @keyup="get_equity_value()" v-model="invested_amount">
+                </label>
+                <label>
+                    <p>Unit you purchased</p>
+                    <input type="text" disabled="true" readonly palceholder="Amount to invest" v-model="unit">
+                </label>
+                <label>
+                    <p>Current Price</p>
+                    <input type="text" disabled="true" readonly palceholder="Current Price" v-model="current_price">
+                </label>
+            </form>
+        </div>
+    </body>
+    <script>
+        var app = new Vue({
+    		el :"#EquityCalculator",
+    		delimiters: ["{&", "&}"],
+            data(){
+    			return {
+                    equities: null,
+                    date: null,
+                    scheme_name:null,
+                    invested_amount:null,
+                    unit: 0,
+                    current_price:0,
+                }
+    		},
+            methods:{
+                getEquity(){
+                    axios
+	                  .get("{% url 'get_equities' %}")
+	                  .then((response) =>{
+	                    this.equities = response.data;
+	                  }).then(()=>{
+                          console.log(this.equities)
+	                  })
+                },
+                get_equity_value(){
+                    $.ajax({
+			            method: "POST",
+			            url: "{% url 'get_equity_value' %}",
+			            datatype:'json',
+			            data: { csrfmiddlewaretoken: '{{ csrf_token }}',frmdt: this.date ,scheme_id: this.scheme_name, amount_invested: this.invested_amount},
+                    }).done(data => {
+                        this.unit = data[0].stack_bought
+                        this.current_price = data[0].price_today
+                    })
+                }
+            },
+            mounted() {
+                this.getEquity()
+            },
+        })
+    </script>
+</html>
